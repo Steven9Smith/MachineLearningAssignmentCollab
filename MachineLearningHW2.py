@@ -1,4 +1,9 @@
 import csv
+
+##########################################
+## Created By Steven, Francis, & Giorgi ##
+##########################################
+
 ## Classes ####################################################################################################################################
 
 # this class is an Amino Acid and holds all relavent Amino Acid data. any data not included in this initialy can be added to the self.data Dictionay later
@@ -57,15 +62,31 @@ class Protein:
         self.__amino_acids = []
         self.data = {}
         self.__name = name
-    # this function counts the amount of the given amino_acid is contained in this protein.
-    def getNumberOfAminoAcidInProtein(self,amino_acid):
-        sequences = chunkstring(self.sequence,3)
+    # this needs to be looked at again but basically find amino acids in RNA sequences
+    def getNumberOfAminoAcidInRNA(self,amino_acid):
         count = 0
         lastIndex = -3
         for codon in amino_acid.getCondons():
             while lastIndex != -1:
                 lastIndex = self.sequence.find(codon,lastIndex+3)
                 count+=1
+        return count
+    # this function counts the amount of the given amino_acid is contained in this protein.
+    def getNumberOfAminoAcidInProtein(self,amino_acid):
+        count = 0
+        lastIndex = 0
+        while lastIndex != -1:
+        #    print("testing if "+str(amino_acid.m1code)+" in "+ self.sequence[lastIndex: len(self.sequence)-1])
+            lastIndex = self.sequence.find(amino_acid.m1code,lastIndex)
+            if lastIndex != -1:
+                count+=1
+                lastIndex+=1
+        return count
+    # this function returns the total amount of amino acids in this protein
+    def getNumberOfAllAminoAcidsInProtein(self):
+        count = 0
+        for amino_acid in self.__amino_acids:
+            count+=amino_acid.data["count"]
         return count
     # this function tests if the given amino_acid is contained in this protein.
     # if it is, then it is added to the protein's 'self.__amino_acid' array
@@ -84,6 +105,9 @@ class Protein:
             volume += amino_acid.data["volume"]*amino_acid.data["count"]
         self.data["volume"] = volume
         return volume
+    # returns the name of the protein
+    def getName(self):
+        return self.__name
     # updates the data in the protein
     def updateData(self):
         self.getVolume()
@@ -112,6 +136,19 @@ class Proteins:
         self.__proteins.append(protein)
     def getProteins(self):
         return self.__proteins
+    def outputFeatureVector(self):
+        with open('test.csv', 'w+') as f:
+            fieldnames = ['volume']
+            writer = csv.DictWriter(f, fieldnames = fieldnames)
+            writer.writeheader()
+            for protein in self.__proteins:
+                #print(protein)
+                number_of_amino_acids = protein.getNumberOfAllAminoAcidsInProtein()
+                if(number_of_amino_acids == 0):
+                    print("critical error at protein"+protein.getName())
+                    number_of_amino_acids = 1
+                writer.writerow({'volume': protein.data["volume"]/number_of_amino_acids})
+                #f.write("%s,%s\n"%(key,my_dict[key]))
 
             
 ## FUNCTIONS #######################################################################################################################
@@ -137,12 +174,16 @@ def loadFile(path):
 #converts Dictionary contents into a csv file
 def convertDictonaryToCSV(my_dict):
     with open('test.csv', 'w') as f:
+        #fieldnames = ['volume']
+        #writer = csv.DictWriter(csvfile, fieldname = fieldnames)
+        #writer.writeheader
         for key in my_dict.keys():
+            #writer.writerow({'volume': my_dict[key].})
             f.write("%s,%s\n"%(key,my_dict[key]))
 
 ## CONSTANTS
 
-SEQUENCE_FILE_PATH = "Test.txt"
+SEQUENCE_FILE_PATH = "Sequence.txt"
 LABEL_FILE_PATH = "Label.txt"
 COMP_FILE_PATH = "comp.csv"
 GDATA_FILE_PATH = "g_data.csv"
@@ -164,7 +205,10 @@ sequence_data = loadFile(SEQUENCE_FILE_PATH)
 proteins = Proteins()
 # note: it is assumed that all the data is the same length
 for i in range(len(sequence_data)):
-    proteins.addProtein(Protein(sequence_data[i],"Protein "+str(i)))
+    if(len(str(sequence_data[i])) > 0):
+        proteins.addProtein(Protein(sequence_data[i],"Protein "+str(i)))
+    else:
+        print("warning@"+SEQUENCE_FILE_PATH+"@"+str(i)+": cannot add empty protein string!")
 
 ## not needed any more ##
 ##########################################################################################################
@@ -176,7 +220,9 @@ for i in range(len(sequence_data)):
 ##########################################################################################################
 
 # print out results
-for protein in proteins.getProteins():
-    print(str(protein))
+#for protein in proteins.getProteins():
+#    print(str(protein))
+
+    proteins.outputFeatureVector()
 
 print("done...")
